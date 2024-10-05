@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # <div align="center"> AWS Cognito Auth </div>
 
 <div align="center">
@@ -73,3 +74,7 @@ SOFTWARE.
 
 
 
+=======
+# Hackathon
+AI with AWS
+>>>>>>> fd84a9f1c873a636def1266d2e2e9f0cb02a042d
