@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../../../Data/Services/AWS/aws_cognito.dart';
 import '../../../Components/app_bar.dart';
 import '../../../Components/primary_btn.dart';
@@ -7,6 +6,7 @@ import '../../../Components/spacer.dart';
 import '../../../Declarations/Constants/Images/image_files.dart';
 import '../../../Declarations/Constants/constants.dart';
 import '../Widgets/input_field.dart';
+import 'homePage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, required this.title});
@@ -23,8 +23,9 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void initState() {
-    emailController = TextEditingController();
-    passwordController = TextEditingController();
+    // Initialize the controllers with default text
+    emailController = TextEditingController(text: "wdu07@student.ubc.ca");
+    passwordController = TextEditingController(text: "Kerwin@1234");
     super.initState();
   }
 
@@ -77,6 +78,28 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  login(String email, String password) =>
-      AWSServices().createInitialRecord(email, password);
+  // Update the login function
+  Future<void> login(String email, String password) async {
+    try {
+      final success = await AWSServices().createInitialRecord(email, password);
+
+      if (success) {
+        // Navigate to HomePage after successful login
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      } else {
+        // Handle login failure (show an error message, etc.)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login failed!')),
+        );
+      }
+    } catch (e) {
+      // Handle exceptions
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
 }

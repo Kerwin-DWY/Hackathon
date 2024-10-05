@@ -19,6 +19,7 @@ class AWSServices {
     try {
       session = await cognitoUser.authenticateUser(authDetails);
       debugPrint('Login Success...');
+      return true;
     } on CognitoUserNewPasswordRequiredException catch (e) {
       debugPrint('CognitoUserNewPasswordRequiredException $e');
     } on CognitoUserMfaRequiredException catch (e) {
