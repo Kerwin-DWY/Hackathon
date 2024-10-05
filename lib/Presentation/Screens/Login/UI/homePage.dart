@@ -12,7 +12,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController symptomsController = TextEditingController();
 
-  final String apiUrl = 'https://your-api-gateway-url.amazonaws.com/prod/submitMedicalInfo';
+  // Corrected API Gateway endpoint
+  final String apiUrl = 'https://cjz4ldve59.execute-api.us-west-2.amazonaws.com/Project/InvokeBedrock';
 
   // Function to send the data to the API Gateway
   Future<void> submitSymptoms() async {
@@ -34,7 +35,7 @@ class _HomePageState extends State<HomePage> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'symptoms': symptoms,  // Send the symptoms in the request body
+          'prompt': symptoms,  // Send the symptoms in the request body
         }),
       );
 
@@ -64,30 +65,30 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.teal,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0), // Adds padding around the content
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Enter your symptoms below:',
-              style: Theme.of(context).textTheme.bodyMedium, // Title for textbox
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 16), // Adds space between the title and the textbox
+            const SizedBox(height: 16),
             TextField(
-              controller: symptomsController, // Capture the input from the user
-              maxLines: 5, // Allows multiline input
+              controller: symptomsController,
+              maxLines: 5,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                labelText: 'Symptoms', // Placeholder text for the field
+                labelText: 'Symptoms',
                 hintText: 'e.g., fever, cough, headache',
-                alignLabelWithHint: true, // Aligns label at the top
+                alignLabelWithHint: true,
               ),
             ),
             const SizedBox(height: 20),
             Center(
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal, // Button color
+                  backgroundColor: Colors.teal,
                   padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                 ),
                 onPressed: () {
