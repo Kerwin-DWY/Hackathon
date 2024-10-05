@@ -15,7 +15,7 @@ class _HomePageState extends State<HomePage> {
   // Corrected API Gateway endpoint
   final String apiUrl = 'https://cjz4ldve59.execute-api.us-west-2.amazonaws.com/Project/InvokeBedrock';
 
-  // Function to send the data to the API Gateway
+  // Function to send the data to the API Gateway and show the response
   Future<void> submitSymptoms() async {
     final String symptoms = symptomsController.text;
 
@@ -41,10 +41,13 @@ class _HomePageState extends State<HomePage> {
 
       // Check if the request was successful
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Symptoms submitted successfully!')),
-        );
+        final responseData = jsonDecode(response.body);
+        String generatedText = responseData['generated_text'] ?? 'No response from model';
+
+        // Show the generated text in a pop-up dialog
+        _showResponseDialog(generatedText);
       } else {
+        // Show an error message in case of failure
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to submit symptoms. Error code: ${response.statusCode}')),
         );
@@ -55,6 +58,27 @@ class _HomePageState extends State<HomePage> {
         SnackBar(content: Text('Error: $e')),
       );
     }
+  }
+
+  // Function to show the response in a dialog (pop-up window)
+  void _showResponseDialog(String responseText) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Response from AI Model"),
+          content: Text(responseText),
+          actions: [
+            TextButton(
+              child: const Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop();  // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
