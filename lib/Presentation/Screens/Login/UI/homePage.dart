@@ -10,123 +10,144 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final TextEditingController symptomsController = TextEditingController();
-
-  // Corrected API Gateway endpoint
+  // API Gateway endpoint for Bedrock
   final String apiUrl = 'https://cjz4ldve59.execute-api.us-west-2.amazonaws.com/Project/InvokeBedrock';
 
-  // Function to send the data to the API Gateway and show the response
-  Future<void> submitSymptoms() async {
-    final String symptoms = symptomsController.text;
+  // List to hold the conversation messages
+  List<Map<String, String>> messages = [];
 
-    if (symptoms.isEmpty) {
-      // If the input field is empty, show an error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your symptoms')),
-      );
-      return;
-    }
+  // Controller for the input field
+  final TextEditingController inputController = TextEditingController();
 
-    try {
-      // Send the POST request to the API Gateway
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'prompt': symptoms,  // Send the symptoms in the request body
-        }),
-      );
+  // Variable to keep track of the conversation step
+  int conversationStep = 0;
 
-      // Check if the request was successful
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        String generatedText = responseData['generated_text'] ?? 'No response from model';
+  Future<void> sendMessage(String userInput) async {
+    setState(() {
+      // Add patient's message to the conversation
+      messages.add({'sender': 'patient', 'text': userInput});
+    });
 
-        // Show the generated text in a pop-up dialog
-        _showResponseDialog(generatedText);
-      } else {
-        // Show an error message in case of failure
+    // Prepare the prompt based on the conversation step
+    if (conversationStep == 0) {
+      // First step: Collect symptoms
+      setState(() {
+        messages.add({'sender': 'ai', 'text': 'Can you provide your medical history?'});
+      });
+    } else if (conversationStep == 1) {
+      // Second step: Collect medical history
+      setState(() {
+        messages.add({'sender': 'ai', 'text': 'Is there anything else important for me to know?'});
+      });
+    } else if (conversationStep == 2) {
+      // Third step: Final analysis
+      String symptoms = messages[1]['text'] ?? '';
+      String medicalHistory = messages[3]['text'] ?? '';
+      String additionalInfo = userInput;
+      String prompt = "Patient's symptoms: $symptoms.\nMedical history: $medicalHistory.\nAdditional information: $additionalInfo.\nBased on this information, what are the possible diagnoses?";
+
+      try {
+        // Send the POST request to the API Gateway for Bedrock
+        final response = await http.post(
+          Uri.parse(apiUrl),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'prompt': prompt,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body);
+          String aiResponse = responseData['filtered_output'] ?? 'No response from AI';
+
+          setState(() {
+            // Add AI's response to the conversation
+            messages.add({'sender': 'ai', 'text': aiResponse});
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to get AI response. Error code: ${response.statusCode}')),
+          );
+        }
+      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit symptoms. Error code: ${response.statusCode}')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
-    } catch (e) {
-      // Handle any errors that occur during the request
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
     }
+
+    // Increment the conversation step
+    conversationStep++;
   }
 
-  // Function to show the response in a dialog (pop-up window)
-  void _showResponseDialog(String responseText) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Response from AI Model"),
-          content: Text(responseText),
-          actions: [
-            TextButton(
-              child: const Text("OK"),
-              onPressed: () {
-                Navigator.of(context).pop();  // Close the dialog
-              },
-            ),
-          ],
-        );
-      },
-    );
+
+  @override
+  void initState() {
+    super.initState();
+    // Start the conversation with the AI's first question
+    messages.add({'sender': 'ai', 'text': 'What symptoms do you have?'});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Medical Symptom Entry"),
+        title: const Text("Medical Consultation"),
         backgroundColor: Colors.teal,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Enter your symptoms below:',
-              style: Theme.of(context).textTheme.bodyMedium,
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                final message = messages[index];
+                bool isPatient = message['sender'] == 'patient';
+                return Align(
+                  alignment: isPatient ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4.0),
+                    padding: const EdgeInsets.all(12.0),
+                    decoration: BoxDecoration(
+                      color: isPatient ? Colors.teal[100] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Text(message['text'] ?? ''),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: symptomsController,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Symptoms',
-                hintText: 'e.g., fever, cough, headache',
-                alignLabelWithHint: true,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: inputController,
+                    decoration: const InputDecoration(
+                      hintText: 'Type your message...',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
                 ),
-                onPressed: () {
-                  // Call the submit function when the button is pressed
-                  submitSymptoms();
-                },
-                child: const Text(
-                  'Submit Symptoms',
-                  style: TextStyle(fontSize: 18),
+                const SizedBox(width: 8.0),
+                ElevatedButton(
+                  onPressed: () {
+                    if (inputController.text.trim().isNotEmpty) {
+                      sendMessage(inputController.text.trim());
+                      inputController.clear();
+                    }
+                  },
+                  child: const Text('Send'),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
