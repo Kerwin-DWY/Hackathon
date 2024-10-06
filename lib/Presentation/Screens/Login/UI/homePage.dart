@@ -82,6 +82,14 @@ class _HomePageState extends State<HomePage> {
     conversationStep++;
   }
 
+  // Reset the conversation
+  void resetConversation() {
+    setState(() {
+      messages.clear();
+      conversationStep = 0;
+      messages.add({'sender': 'ai', 'text': 'What symptoms do you have?'});
+    });
+  }
 
   @override
   void initState() {
@@ -96,6 +104,13 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text("Medical Consultation"),
         backgroundColor: Colors.teal,
+        actions: [
+          // Add the reset button in the app bar
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: resetConversation, // Call resetConversation when clicked
+          ),
+        ],
       ),
       body: Column(
         children: [
